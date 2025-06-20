@@ -19,6 +19,6 @@ pre-commit install
 
 Pre-commit should then check automatically your code before a commit, otherwise you can run:
 ```
-pre-commit --run-allfiles
+pre-commit run --all-files
 ```
 
