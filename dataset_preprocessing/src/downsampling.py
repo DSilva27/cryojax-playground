@@ -1,16 +1,13 @@
+import logging
+from typing import Any, Tuple, Dict, Optional
+
 import jax
 import equinox as eqx
-import jax_dataloader as jdl
-
 from cryojax.data import RelionParticleParameterFile, RelionParticleStackDataset
-
 from cryojax.image import downsample_with_fourier_cropping
-from typing import Any, Tuple, Dict, Optional
 from jaxtyping import Int, Array, Float
 
-from utils import create_dataloader, get_images_per_mrc
-
-
+from .utils import create_dataloader, get_images_per_mrc
 
 
 def downsample_relion_dataset(
@@ -30,13 +27,24 @@ def downsample_relion_dataset(
             "delimiter": "_",
             "overwrite": overwrite,
         }
+
+    logging.info(
+        f"Downsampling RELION dataset with downsampling factor {downsampling_factor}."
+    )
     if images_per_mrc is None:
         images_per_mrc = get_images_per_mrc(relion_dataset.parameter_file)
 
+    logging.info(f"Writing {images_per_mrc} images per MRC file.")
+
+    logging.debug("Validating inputs...")
     _validate_inputs(relion_dataset.parameter_file, downsampling_factor)
+    logging.debug("Inputs validated.")
+
+    logging.info("Updating optical parameters in parameter file...")
     new_parameter_file = _update_parameter_file(
         relion_dataset.parameter_file, downsampling_factor
     )
+    logging.info("Optical parameters updated.")
 
     new_relion_dataset = RelionParticleStackDataset(
         RelionParticleParameterFile(
@@ -50,6 +58,7 @@ def downsample_relion_dataset(
     )
 
     dataloader = create_dataloader(relion_dataset, batch_size=images_per_mrc)
+    logging.info("Starting downsampling of images...")
     for batch in dataloader:
         downsampled_images = _downsample_images_with_fourier_cropping(
             batch["stack"]["images"], downsampling_factor, batch_size
@@ -60,8 +69,12 @@ def downsample_relion_dataset(
                 "parameters": new_parameter_file[batch["index"]],
             }
         )
+    logging.info("Downsampling completed. Saving new dataset...")
 
     new_relion_dataset.parameter_file.save(overwrite=True)
+    logging.info(
+        f"New dataset saved to {path_to_new_starfile} and {path_to_new_relion_project}."
+    )
     return new_relion_dataset
 
 
@@ -81,9 +94,6 @@ def _downsample_images_with_fourier_cropping(
     )
 
 
-
-
-
 def _update_parameter_file(
     parameter_file: RelionParticleParameterFile, downsampling_factor: float | int
 ):
@@ -91,8 +101,10 @@ def _update_parameter_file(
 
     # compute new pixel size
     instrument_config = parameter_file[0]["instrument_config"]
+
     new_pixel_size = instrument_config.pixel_size * downsampling_factor
     new_box_size = int(instrument_config.shape[0] / downsampling_factor)
+    logging.info(f"New pixel size: {new_pixel_size}, New box size: {new_box_size}.")
 
     # update starfile data
     starfile_data = parameter_file.copy().starfile_data

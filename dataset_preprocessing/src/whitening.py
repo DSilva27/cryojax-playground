@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 import os
+import logging
 
 import jax.numpy as jnp
 from cryojax.data import RelionParticleParameterFile, RelionParticleStackDataset
@@ -7,7 +8,7 @@ import cryojax.image.operators as op
 from cryojax.image import rfftn, irfftn
 import jax_dataloader as jdl
 
-from utils import create_dataloader, get_images_per_mrc
+from .utils import create_dataloader, get_images_per_mrc
 
 
 def whiten_relion_dataset(
@@ -28,6 +29,8 @@ def whiten_relion_dataset(
     if images_per_mrc is None:
         images_per_mrc = get_images_per_mrc(relion_dataset.parameter_file)
 
+    logging.info(f"Writing {images_per_mrc} images per MRC file.")
+
     # drop the rlnImageName column from the parameter file
     new_parameter_file = relion_dataset.parameter_file.copy()
     new_parameter_file.starfile_data["particles"].drop(
@@ -46,8 +49,12 @@ def whiten_relion_dataset(
     )
 
     dataloader = create_dataloader(relion_dataset, batch_size=images_per_mrc)
-    whitening_filter = _compute_whitening_filter(relion_dataset, dataloader)
 
+    logging.info("Computing whitening filter...")
+    whitening_filter = _compute_whitening_filter(relion_dataset, dataloader)
+    logging.info("Whitening filter computed.")
+
+    logging.info("Applying whitening filter to images...")
     for batch in dataloader:
         whitened_images = irfftn(whitening_filter(rfftn(batch["stack"]["images"])))
 
@@ -57,13 +64,16 @@ def whiten_relion_dataset(
                 "parameters": new_parameter_file[batch["index"]],
             }
         )
-
+    logging.info("Whitening filter applied to images.")
     new_relion_dataset.parameter_file.save(overwrite=True)
+    logging.info(
+        f"New RELION dataset saved to {path_to_new_relion_project} with parameter file {path_to_new_starfile}."
+    )
     jnp.save(
         os.path.join(path_to_new_relion_project, "whitening_filter.npy"),
         whitening_filter.array,
     )
-    print(
+    logging.info(
         f"Whitening filter saved to {os.path.join(path_to_new_relion_project, 'whitening_filter.npy')}"
     )
     return new_relion_dataset

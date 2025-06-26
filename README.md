@@ -21,4 +21,3 @@ Pre-commit should then check automatically your code before a commit, otherwise 
 ```
 pre-commit run --all-files
 ```
-
