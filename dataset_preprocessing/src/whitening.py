@@ -9,6 +9,8 @@ import jax_dataloader as jdl
 
 from utils import create_dataloader, get_images_per_mrc
 
+# noqa: F722
+
 
 def whiten_relion_dataset(
     path_to_new_starfile: str,

@@ -1,6 +1,5 @@
 import jax
 import equinox as eqx
-import jax_dataloader as jdl
 
 from cryojax.data import RelionParticleParameterFile, RelionParticleStackDataset
 
@@ -10,7 +9,7 @@ from jaxtyping import Int, Array, Float
 
 from utils import create_dataloader, get_images_per_mrc
 
-
+# noqa: F722
 
 
 def downsample_relion_dataset(
@@ -79,9 +78,6 @@ def _downsample_images_with_fourier_cropping(
         images,
         batch_size=batch_size,
     )
-
-
-
 
 
 def _update_parameter_file(

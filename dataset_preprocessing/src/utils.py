@@ -2,6 +2,8 @@ from cryojax.data import RelionParticleParameterFile, RelionParticleStackDataset
 import jax_dataloader as jdl
 from typing import Dict
 
+# noqa: F722
+
 
 class CustomJaxDataset(jdl.Dataset):
     cryojax_dataset: RelionParticleStackDataset
@@ -32,6 +34,7 @@ def get_images_per_mrc(parameter_file: RelionParticleParameterFile) -> int:
     # group by unique filenames
     grouped = new_df.groupby("filename")["index"].apply(list).reset_index()
     return int(grouped["index"].apply(len).max())
+
 
 def create_dataloader(
     relion_dataset: RelionParticleStackDataset, batch_size
