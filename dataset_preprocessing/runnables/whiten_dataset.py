@@ -31,7 +31,7 @@ def main(
     )
 
     whiten_relion_dataset(
-        path_to_new_starfile=os.path.join(output_folder, "downsampled_particles.star"),
+        path_to_new_starfile=os.path.join(output_folder, "whitened_particles.star"),
         path_to_new_relion_project=output_folder,
         relion_dataset=relion_dataset,
         images_per_mrc=images_per_mrc,
